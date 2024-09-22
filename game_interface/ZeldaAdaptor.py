@@ -1,0 +1,101 @@
+import time
+
+from game_interface import GameAdaptor
+
+from computer_vision import LegMovement, HeadMovement, HeadPose, ArmMovement
+
+
+class ZeldaAdaptor(GameAdaptor):
+    def __init__(self):
+        super().__init__()
+        self._RUN_KEY = "W"
+        self._CAM_LEFT_KEY = "left"
+        self._CAM_RIGHT_KEY = "right"
+        self._WEAPON_SWING_KEY = "Y"
+        self._JUMP_KEY = "X"
+
+    def __del__(self):
+        if self._already_left_tilt:
+            self._input_controller.keyUp(self._CAM_LEFT_KEY)
+
+        if self._already_right_tilt:
+            self._input_controller.keyUp(self._CAM_RIGHT_KEY)
+
+        if self._already_running:
+            self._input_controller.keyUp(self._RUN_KEY)
+
+    def on_leg_movement(self, leg_movement: LegMovement):
+        if leg_movement == LegMovement.Running:
+            self._last_run_time = time.time()
+            if not self._already_running:
+                self._input_controller.keyDown(self._RUN_KEY)
+                self._already_running = True
+
+        elif leg_movement == LegMovement.Jump:
+            self._input_controller.keyDown(self._JUMP_KEY)
+            self._input_controller.keyUp(self._JUMP_KEY)
+        else:
+            if self._last_run_time is not None:
+                time_differ = (time.time() - self._last_run_time)
+                if time_differ < self._RUNNING_GAP_THRESHOLD:
+                    return
+
+            if self._already_running:
+                self._input_controller.keyUp(self._RUN_KEY)
+                self._already_running = False
+
+    def on_head_movement(self, head_movement: HeadMovement):
+        pass
+
+    def on_arm_movement(self, arm_movement: ArmMovement):
+
+        if self._already_right_arm_bended:
+            if not arm_movement.RIGHT_ARM_BENDED:
+                self._input_controller.keyDown(self._WEAPON_SWING_KEY)
+                self._input_controller.keyUp(self._WEAPON_SWING_KEY)
+
+        self._already_right_arm_bended = arm_movement.RIGHT_ARM_BENDED
+        self._already_right_arm_raised = arm_movement.RIGHT_ARM_RAISED
+
+    def on_head_tilt(self, head_pose: HeadPose):
+        if head_pose == HeadPose.Right_Tilted:
+            if not self._already_right_tilt:
+
+                if self._already_left_tilt:
+                    self._input_controller.keyUp(self._CAM_LEFT_KEY)
+                    self._already_left_tilt = False
+
+                self._input_controller.keyDown(self._CAM_RIGHT_KEY)
+                self._already_right_tilt = True
+
+        elif head_pose == HeadPose.Left_Tilted:
+            if not self._already_right_tilt:
+
+                if self._already_right_tilt:
+                    self._input_controller.keyUp(self._CAM_RIGHT_KEY)
+                    self._already_right_tilt = False
+
+                self._input_controller.keyDown(self._CAM_LEFT_KEY)
+                self._already_left_tilt = True
+
+        elif head_pose == HeadPose.Straight:
+            if self._already_right_tilt:
+                self._input_controller.keyUp(self._CAM_RIGHT_KEY)
+                self._already_right_tilt = False
+
+            if self._already_left_tilt:
+                self._input_controller.keyUp(self._CAM_LEFT_KEY)
+                self._already_left_tilt = False
+
+    def on_no_action(self):
+        if self._already_left_tilt:
+            self._input_controller.keyUp(self._CAM_LEFT_KEY)
+            self._already_left_tilt = False
+
+        if self._already_right_tilt:
+            self._input_controller.keyUp(self._CAM_RIGHT_KEY)
+            self._already_right_tilt = False
+
+        if self._already_running:
+            self._input_controller.keyUp(self._RUN_KEY)
+            self._already_running = False

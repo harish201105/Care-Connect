@@ -1,0 +1,6 @@
+{
+    "board": "arduino:avr:uno",
+    "programmer": "avrispmkii",
+    "sketch": "follow_cam_firmware.ino",
+    "port": "COM5"
+}
