@@ -1,0 +1,4 @@
+streamlit==1.25.0            # Version may vary, latest as of Sep 2024
+firebase-admin==6.1.0        # Firebase Admin SDK for user authentication
+requests==2.31.0             # To make HTTP requests to Firebase API
+python-dotenv==1.0.0         # For handling environment variables (.env)
